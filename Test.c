@@ -1,74 +1,60 @@
 #include <stdio.h>
 
+struct Process {
+    int pid, at, bt, priority, ct, tat, wt, completed;
+};
+
 int main() {
     int n = 4;
-    int at[] = {0, 2, 4, 6};
-    int bt[] = {6, 4, 2, 3};
-    int rt[] = {6, 4, 2, 3};   // remaining time
-    int ct[4], tat[4], wt[4];
-    int tq = 2;
+    struct Process p[4] = {
+        {1, 0, 4, 9, 0, 0, 0, 0},
+        {2, 1, 5, 11, 0, 0, 0, 0},
+        {3, 2, 8, 19, 0, 0, 0, 0},
+        {4, 3, 7, 3, 0, 0, 0, 0}
+    };
 
     int time = 0, completed = 0;
-    int queue[100], front = 0, rear = 0;
-    int visited[4] = {0};
-
-    // Add first process
-    queue[rear++] = 0;
-    visited[0] = 1;
 
     while (completed < n) {
-        if (front == rear) {
-            time++;
-            for (int i = 0; i < n; i++) {
-                if (at[i] <= time && visited[i] == 0) {
-                    queue[rear++] = i;
-                    visited[i] = 1;
+        int idx = -1;
+        int max_priority = -1;
+
+        // Find highest priority process available at current time
+        for (int i = 0; i < n; i++) {
+            if (p[i].at <= time && p[i].completed == 0) {
+                if (p[i].priority > max_priority) {
+                    max_priority = p[i].priority;
+                    idx = i;
                 }
             }
-            continue;
         }
 
-        int i = queue[front++];
-
-        if (rt[i] > tq) {
-            time += tq;
-            rt[i] -= tq;
-        } else {
-            time += rt[i];
-            rt[i] = 0;
-            ct[i] = time;
+        if (idx != -1) {
+            time += p[idx].bt;
+            p[idx].ct = time;
+            p[idx].tat = p[idx].ct - p[idx].at;
+            p[idx].wt = p[idx].tat - p[idx].bt;
+            p[idx].completed = 1;
             completed++;
-        }
-
-        // Add newly arrived processes
-        for (int j = 0; j < n; j++) {
-            if (at[j] <= time && visited[j] == 0) {
-                queue[rear++] = j;
-                visited[j] = 1;
-            }
-        }
-
-        // If process is not finished, push again into queue
-        if (rt[i] > 0) {
-            queue[rear++] = i;
+        } else {
+            time++; // CPU idle
         }
     }
 
-    // Calculate TAT and WT
-    float total_wt = 0, total_tat = 0;
+    float total_tat = 0, total_wt = 0;
 
-    printf("Process\tAT\tBT\tCT\tTAT\tWT\n");
+    printf("\nPID\tAT\tBT\tPR\tCT\tTAT\tWT\n");
     for (int i = 0; i < n; i++) {
-        tat[i] = ct[i] - at[i];
-        wt[i] = tat[i] - bt[i];
-        total_wt += wt[i];
-        total_tat += tat[i];
+        printf("P%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
+               p[i].pid, p[i].at, p[i].bt, p[i].priority,
+               p[i].ct, p[i].tat, p[i].wt);
 
-        printf("P%d\t%d\t%d\t%d\t%d\t%d\n", i + 1, at[i], bt[i], ct[i], tat[i], wt[i]);
+        total_tat += p[i].tat;
+        total_wt += p[i].wt;
     }
 
+    printf("\nAverage Turnaround Time = %.2f", total_tat / n);
     printf("\nAverage Waiting Time = %.2f\n", total_wt / n);
-    printf("Average Turnaround Time = %.2f\n", total_tat / n);
 
     return 0;
 }
